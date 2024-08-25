@@ -1,28 +1,22 @@
 package site.thedeny.every_daily_log.chat.service;
 
-import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import site.thedeny.every_daily_log.chat.dto.request.ChattingRequest;
 import site.thedeny.every_daily_log.chat.dto.response.ChattingResponse;
+import site.thedeny.every_daily_log.chat.dto.response.ChattingRoomResponse;
+import site.thedeny.every_daily_log.chat.entity.ChattingRoomEntity;
 import site.thedeny.every_daily_log.chat.repository.ChattingRepository;
+import site.thedeny.every_daily_log.chat.repository.ChattingRoomRepository;
 
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-@Disabled("빌드는 해보자구")
 @ExtendWith(MockitoExtension.class)
 class ChattingServiceTest {
 
@@ -30,35 +24,71 @@ class ChattingServiceTest {
     private ChattingService chattingService;
     @Mock
     private ChattingRepository chattingRepository;
+    @Mock
+    private ChattingRoomRepository chattingRoomRepository;
+
+    ChattingRequest request1 = new ChattingRequest("1", "1", "5", "tmp1", null);
+    ChattingRequest request2 = new ChattingRequest("1", "2", "4", "tmp2", null);
+    ChattingRequest request3 = new ChattingRequest("1", "3", "3", "tmp3", null);
+    ChattingRequest request4 = new ChattingRequest("1", "4", "2", "tmp4", null);
+    ChattingRequest request5 = new ChattingRequest("1", "5", "1", "tmp5", null);
+
+    ChattingRoomEntity chattingRoom = ChattingRoomEntity.builder()
+            .id("1")
+            .roomName("tmp1")
+            .roomState("1")
+            .build();
+
+    @BeforeEach
+    void setUp() {
+        chattingRoomRepository.save(chattingRoom);
+
+        chattingRepository.saveAll(
+                List.of(request1.convertToEntity(), request2.convertToEntity(), request3.convertToEntity(), request4.convertToEntity(), request5.convertToEntity()));
+    }
+
 
     @Test
     void getMyRooms() {
         // given
-        ChattingRequest request = new ChattingRequest(null, null, null, null, "1");
+        ChattingRequest request = new ChattingRequest("1", "1", "1", "tmp", "1");
 
         // stub
-        BDDMockito.given(chattingRepository.findMyRooms(request.targetMemberKey())).willAnswer(i -> Flux.fromIterable(Collections.emptyList()));
+        Mockito.when(chattingRepository.findMyChats(request.targetMemberKey()))
+                .thenReturn(Flux.just(request1.convertToEntity(), request5.convertToEntity()));
+
+        Mockito.when(chattingRoomRepository.findAllById(List.of("1")))
+                .thenReturn(Flux.just(chattingRoom));
 
         // when
-        Flux<String> myRooms = chattingService.getMyRooms("1");
+        Flux<ChattingRoomResponse> result = chattingService.getMyRooms(request.targetMemberKey());
 
         // then
-        Assertions.assertThat(myRooms).isEqualTo(Flux.empty());
+        StepVerifier.create(result)
+                .expectNext(ChattingRoomResponse.fromEntity(ChattingRoomEntity.builder()
+                        .id("1")
+                        .roomName("tmp1")
+                        .roomState("1")
+                        .build()))
+                .verifyComplete();
     }
 
     @Test
     void getChatsInRoom() {
         // given
-        ChattingRequest request = new ChattingRequest("1", null, null, null, null);
+        ChattingRequest request = new ChattingRequest("1", null, null, "tmp", null);
 
         // stub
-        BDDMockito.given(chattingRepository.findChatsInRoom(request.roomKey())).willAnswer(i -> Flux.fromIterable(Collections.emptyList()));
-
+        Mockito.when(chattingRepository.findChatsInRoom(request.roomKey()))
+                .thenReturn(Flux.just(request1.convertToEntity(), request5.convertToEntity()));
         // when
-        Flux<ChattingResponse> messages = chattingService.getChatsInRoom("1");
+        Flux<ChattingResponse> result = chattingService.getChatsInRoom(request.roomKey());
 
         // then
-        Assertions.assertThat(messages).isEqualTo(Flux.empty());
+        StepVerifier.create(result)
+                .expectNext(ChattingResponse.fromEntity(request1.convertToEntity()))
+                .expectNext(ChattingResponse.fromEntity(request5.convertToEntity()))
+                .verifyComplete();
     }
 
     @Test
@@ -67,13 +97,16 @@ class ChattingServiceTest {
         ChattingRequest request = new ChattingRequest("1", "1", null, null, null);
 
         // stub
-        BDDMockito.given(chattingRepository.findSentMessages(request.roomKey(), request.senderKey())).willAnswer(i -> Flux.fromIterable(Collections.emptyList()));
+        Mockito.when(chattingRepository.findSentMessages(request.roomKey(), request.senderKey()))
+                .thenReturn(Flux.just(request1.convertToEntity()));
 
         // when
-        Flux<ChattingResponse> messages = chattingService.getSentMessages("1","1");
+        Flux<ChattingResponse> result = chattingService.getSentMessages(request.roomKey(), request.senderKey());
 
         // then
-        Assertions.assertThat(messages).isEqualTo(Flux.empty());
+        StepVerifier.create(result)
+                .expectNext(ChattingResponse.fromEntity(request1.convertToEntity()))
+                .verifyComplete();
     }
 
     @Test
@@ -82,18 +115,34 @@ class ChattingServiceTest {
         ChattingRequest request = new ChattingRequest("1", null, "1", null, null);
 
         // stub
-        BDDMockito.given(chattingRepository.findReceivedMessages(request.roomKey(), request.senderKey())).willAnswer(i -> Flux.fromIterable(Collections.emptyList()));
+        Mockito.when(chattingRepository.findReceivedMessages(request.roomKey(), request.receiverKey()))
+                .thenReturn(Flux.just(request1.convertToEntity()));
 
         // when
-        Flux<ChattingResponse> messages = chattingService.getReceivedMessages("1","1");
+        Flux<ChattingResponse> result = chattingService.getReceivedMessages(request.roomKey(), request.receiverKey());
 
         // then
-        Assertions.assertThat(messages).isEqualTo(Flux.empty());
-    }
 
+        StepVerifier.create(result)
+                .expectNext(ChattingResponse.fromEntity(request1.convertToEntity()))
+                .verifyComplete();
+    }
 
     @Test
     void sendChat() {
+        // given
+        ChattingRequest request = new ChattingRequest("1", "1", "5", "tmp1", null);
 
+        // stub
+        Mockito.when(chattingRepository.save(request.convertToEntity()))
+                .thenReturn(Mono.just(request1.convertToEntity()));
+
+        // when
+        chattingService.sendChat(request);
+
+        // then
+        StepVerifier.create(chattingRepository.findById("6"))
+                .expectNext(request1.convertToEntity())
+                .verifyComplete();
     }
 }

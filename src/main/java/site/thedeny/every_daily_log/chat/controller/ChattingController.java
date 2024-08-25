@@ -6,10 +6,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import site.thedeny.every_daily_log.chat.dto.request.ChattingRequest;
 import site.thedeny.every_daily_log.chat.dto.response.ChattingResponse;
+import site.thedeny.every_daily_log.chat.dto.response.ChattingRoomResponse;
 import site.thedeny.every_daily_log.chat.service.ChattingService;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -19,7 +20,7 @@ public class ChattingController {
 
     @CrossOrigin
     @GetMapping(value = "/my/{targetMemberKey}/rooms", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<Flux<String>> getMyRooms(@PathVariable String targetMemberKey) {
+    public ResponseEntity<Flux<ChattingRoomResponse>> getMyRooms(@PathVariable String targetMemberKey) {
         System.out.println("targetMemberKey = " + targetMemberKey);
         return ResponseEntity.ok(chattingService.getMyRooms(targetMemberKey));
     }
@@ -50,9 +51,9 @@ public class ChattingController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<Mono<ChattingResponse>> sendMessage(@RequestBody ChattingRequest request) {
+    public ResponseEntity<String> sendMessage(@RequestBody ChattingRequest request) {
         System.out.println("request = " + request);
-        return ResponseEntity.ok(chattingService.sendChat(request));
+        return ResponseEntity.ok("ok");
     }
 
 }

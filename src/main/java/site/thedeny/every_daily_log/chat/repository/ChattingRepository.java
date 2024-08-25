@@ -12,13 +12,13 @@ public interface ChattingRepository extends ReactiveMongoRepository<ChattingEnti
     @Tailable
     @Query("{ 'roomKey': ?0 }")
     Flux<ChattingEntity> findChatsInRoom(String roomKey);
-//    @Tailable
+    @Tailable
     @Query("{ $or: [ { 'senderKey': ?0 }, { 'receiverKey': ?0 } ] }")
-    Flux<ChattingEntity> findMyRooms(String memberKey);
-//    @Tailable
-    @Query("{ 'roomKey': ?0, senderKey: ?1 }")
+    Flux<ChattingEntity> findMyChats(String memberKey);
+    @Tailable
+    @Query("{ 'roomKey': ?0, 'senderKey': ?1 }")
     Flux<ChattingEntity> findSentMessages(String roomKey, String senderKey);
-//    @Tailable
+    @Tailable
     @Query("{ 'roomKey': ?0, 'receiverKey': ?1 }")
     Flux<ChattingEntity> findReceivedMessages(String roomKey, String receiverKey);
 }
