@@ -1,0 +1,53 @@
+server: # 톰캣 설정
+  port: 8080
+  encoding:
+    charset: utf-8
+spring:
+  application: # 프로젝트 이름
+    name: every-daily-log
+  datasource: # db 파일 위치 및 연결 드라이버
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:~/every-daily-log
+    username: sa
+    password:
+  h2:
+    console: # h2 db 콘솔 설정
+      port: 8078
+      enabled: true
+      settings:
+        web-allow-others: true
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+  sql: # 실행되는 쿼리 위치인가 잘 모르겠네...
+    init:
+      schema-locations: classpath*:db/h2/schema.sql
+      data-locations: classpath*:db/h2/data.sql
+  r2dbc: # h2 db 와의 접속 설정
+    url: r2dbc:h2:mem:///test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  data:
+    mongodb:
+        host: 127.0.0.1
+        port: 27017
+        database: every-daily-log
+#de:
+#  flapdoodle:
+#    mongodb:
+#      embedded:
+#        version: 5.0.5
+logging:
+  level:
+    org:
+      springframework:
+        data:
+          mongodb:
+            core:
+              ReactiveMongoTemplate: DEBUG
