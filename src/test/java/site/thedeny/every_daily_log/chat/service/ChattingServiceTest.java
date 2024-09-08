@@ -138,10 +138,10 @@ class ChattingServiceTest {
                 .thenReturn(Mono.just(request1.convertToEntity()));
 
         // when
-        chattingService.sendChat(request);
+        Mono<String> result = chattingService.sendChat(request);
 
         // then
-        StepVerifier.create(chattingRepository.findById("6"))
+        StepVerifier.create(chattingRepository.findById("1"))
                 .expectNext(request1.convertToEntity())
                 .verifyComplete();
     }

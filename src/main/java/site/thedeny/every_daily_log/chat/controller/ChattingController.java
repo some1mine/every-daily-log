@@ -1,6 +1,7 @@
 package site.thedeny.every_daily_log.chat.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -51,9 +52,9 @@ public class ChattingController {
     }
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendMessage(@RequestBody ChattingRequest request) {
+    public ResponseEntity<Mono<String>> sendMessage(@RequestBody ChattingRequest request) {
         System.out.println("request = " + request);
-        return ResponseEntity.ok("ok");
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
 }

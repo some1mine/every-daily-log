@@ -11,11 +11,11 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "chatting_room")
-public class ChattingRoomEntity {
+@Document(collection = "chatting_relation")
+public class ChattingRelationEntity {
     @Id private String id;
-    private String roomName;
-    private String roomState;
-    private LocalTime createdAt;
-    private LocalTime updatedAt;
+    private String roomKey;
+    private String memberKey;
+    private LocalTime enteredAt;
+    private LocalTime exitedAt;
 }

@@ -3,6 +3,7 @@ package site.thedeny.every_daily_log.chat.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import site.thedeny.every_daily_log.chat.dto.request.ChattingRequest;
 import site.thedeny.every_daily_log.chat.dto.response.ChattingResponse;
@@ -57,8 +58,10 @@ public class ChattingService {
                 .defaultIfEmpty(ChattingResponse.fromEntity(new ChattingEntity()));
     }
 
-    public void sendChat(ChattingRequest request) {
-        chattingRepository.insert(request.convertToEntity());
+    public Mono<String> sendChat(ChattingRequest request) {
+        return chattingRepository.insert(request.convertToEntity())
+                .flatMap(inserted -> chattingRepository.findById(inserted.getId()))
+                .map(ChattingEntity::getId);
     }
 
 }

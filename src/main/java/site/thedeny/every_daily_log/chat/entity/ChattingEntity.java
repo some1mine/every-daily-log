@@ -1,15 +1,13 @@
 package site.thedeny.every_daily_log.chat.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,5 +18,5 @@ public class ChattingEntity {
     private String senderKey;
     private String receiverKey;
     private String msg;
-    private LocalDateTime createdAt;
+    private LocalTime createdAt;
 }
