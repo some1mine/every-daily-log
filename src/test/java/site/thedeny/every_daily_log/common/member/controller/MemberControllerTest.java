@@ -1,67 +1,80 @@
 package site.thedeny.every_daily_log.common.member.controller;
 
-import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mockito;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import reactor.core.publisher.Mono;
-import site.thedeny.every_daily_log.common.config.security.SecurityConfig;
+import reactor.test.StepVerifier;
+import site.thedeny.every_daily_log.common.config.security.JwtTokenService;
 import site.thedeny.every_daily_log.common.member.dto.request.LoginForm;
 import site.thedeny.every_daily_log.common.member.dto.request.MemberRequest;
+import site.thedeny.every_daily_log.common.member.dto.response.LoginResponse;
+import site.thedeny.every_daily_log.common.member.entity.MemberEntity;
 import site.thedeny.every_daily_log.common.member.repository.MemberRepository;
 import site.thedeny.every_daily_log.common.member.service.MemberService;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(value = {SpringExtension.class, MockitoExtension.class})
-@WebFluxTest(controllers = MemberController.class)
-@ContextConfiguration(classes = SecurityConfig.class)
+@ExtendWith(MockitoExtension.class)
 class MemberControllerTest {
 
-    @Autowired
-    private WebTestClient webTestClient;
+    @Mock MemberService memberService;
+    @Mock MemberRepository memberRepository;
+    @Mock JwtTokenService jwtTokenService;
+    @Mock ReactiveAuthenticationManager loginAuthenticationManager;
 
-    @InjectMocks
-    private MemberService memberService;
+    private MemberController controller;
 
-    @MockBean
-    private MemberRepository memberRepository;
-
-    @Test
-    @Order(1)
-    void join() {
-        MemberRequest request = new MemberRequest("testId", "testPassword", "testName", "testNickname", "null");
-
-        Mockito.when(memberRepository.save(request.convertToEntity())).thenReturn(Mono.just(request.convertToEntity()));
-
-        webTestClient.post()
-                .uri("/auth/join")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromObject(request))
-                .exchange()
-                .expectStatus().isCreated();
-
-        Mockito.verify(memberRepository, Mockito.times(1)).save(request.convertToEntity());
+    @BeforeEach
+    void setUp() {
+        controller = new MemberController(
+                memberService,
+                memberRepository,
+                jwtTokenService,
+                loginAuthenticationManager
+        );
     }
 
     @Test
-    @Order(2)
-    void login() {
-        LoginForm loginForm = new LoginForm("testId", "testPassword");
-        webTestClient.post()
-                .uri("/auth/login")
-                .body(Mono.just(loginForm), LoginForm.class)
-                .exchange()
-                .expectStatus().isOk();
+    void joinReturnsCreatedMember() {
+        MemberRequest request = new MemberRequest("testId", "password", "name", "nickname", null);
+        MemberEntity member = request.convertToEntity();
+        when(memberService.join(request)).thenReturn(Mono.just(member));
+
+        var response = controller.join(request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        StepVerifier.create(response.getBody()).expectNext(member).verifyComplete();
+    }
+
+    @Test
+    void loginAuthenticatesPasswordAndReturnsJwt() {
+        LoginForm form = new LoginForm("testId", "password");
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+                "testId", null, java.util.List.of());
+        MemberEntity member = MemberEntity.builder()
+                .id("member-1")
+                .userId("testId")
+                .enabled("Y")
+                .build();
+        LoginResponse token = new LoginResponse("Bearer", "signed.jwt.token", 3600);
+
+        when(loginAuthenticationManager.authenticate(any())).thenReturn(Mono.just(authentication));
+        when(memberRepository.findByUserId("testId")).thenReturn(Mono.just(member));
+        when(jwtTokenService.createAccessToken(member)).thenReturn(token);
+
+        StepVerifier.create(controller.login(form))
+                .assertNext(response -> {
+                    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                    assertThat(response.getBody()).isEqualTo(token);
+                })
+                .verifyComplete();
     }
 }
