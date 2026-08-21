@@ -32,6 +32,7 @@ public class H2R2dbcConfig extends AbstractR2dbcConfiguration {
         databasePopulator.addScript(new ClassPathResource("schema-member-h2.sql"));
         databasePopulator.addScript(new ClassPathResource("schema-routine-h2.sql"));
         databasePopulator.addScript(new ClassPathResource("schema-chat_room-h2.sql"));
+        databasePopulator.addScript(new ClassPathResource("schema-daily-log-h2.sql"));
 
         initializer.setConnectionFactory(connectionFactory());
         initializer.setDatabasePopulator(databasePopulator);

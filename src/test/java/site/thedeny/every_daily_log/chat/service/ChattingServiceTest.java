@@ -11,8 +11,10 @@ import reactor.test.StepVerifier;
 import site.thedeny.every_daily_log.chat.dto.request.ChattingRequest;
 import site.thedeny.every_daily_log.chat.dto.response.ChattingResponse;
 import site.thedeny.every_daily_log.chat.dto.response.ChattingRoomResponse;
+import site.thedeny.every_daily_log.chat.entity.ChattingEntity;
 import site.thedeny.every_daily_log.chat.entity.ChattingRoomEntity;
 import site.thedeny.every_daily_log.chat.repository.ChattingRepository;
+import site.thedeny.every_daily_log.chat.repository.ChattingRelationRepository;
 import site.thedeny.every_daily_log.chat.repository.ChattingRoomRepository;
 
 import java.util.List;
@@ -26,6 +28,8 @@ class ChattingServiceTest {
     private ChattingRepository chattingRepository;
     @Mock
     private ChattingRoomRepository chattingRoomRepository;
+    @Mock
+    private ChattingRelationRepository chattingRelationRepository;
 
     ChattingRequest request1 = new ChattingRequest("1", "1", "5", "tmp1", null);
     ChattingRequest request2 = new ChattingRequest("1", "2", "4", "tmp2", null);
@@ -57,8 +61,8 @@ class ChattingServiceTest {
         Mockito.when(chattingRepository.findMyChats(request.targetMemberKey()))
                 .thenReturn(Flux.just(request1.convertToEntity(), request5.convertToEntity()));
 
-        Mockito.when(chattingRoomRepository.findAllById(List.of("1")))
-                .thenReturn(Flux.just(chattingRoom));
+        Mockito.when(chattingRoomRepository.findById("1"))
+                .thenReturn(Mono.just(chattingRoom));
 
         // when
         Flux<ChattingRoomResponse> result = chattingService.getMyRooms(request.targetMemberKey());
@@ -134,15 +138,24 @@ class ChattingServiceTest {
         ChattingRequest request = new ChattingRequest("1", "1", "5", "tmp1", null);
 
         // stub
-        Mockito.when(chattingRepository.save(request.convertToEntity()))
+        Mockito.when(chattingRepository.save(Mockito.any(ChattingEntity.class)))
                 .thenReturn(Mono.just(request1.convertToEntity()));
+        Mockito.when(chattingRoomRepository.existsById("1")).thenReturn(Mono.just(true));
+        Mockito.when(chattingRelationRepository.existsByRoomKeyAndMemberKey("1", "1"))
+                .thenReturn(Mono.just(true));
+        Mockito.when(chattingRelationRepository.existsByRoomKeyAndMemberKey("1", "5"))
+                .thenReturn(Mono.just(true));
 
         // when
-        Mono<String> result = chattingService.sendChat(request);
+        Mono<ChattingEntity> result = chattingService.sendChat(request);
 
         // then
-        StepVerifier.create(chattingRepository.findById("1"))
-                .expectNext(request1.convertToEntity())
+        StepVerifier.create(result)
+                .assertNext(saved -> {
+                    org.junit.jupiter.api.Assertions.assertEquals("1", saved.getRoomKey());
+                    org.junit.jupiter.api.Assertions.assertEquals("1", saved.getSenderKey());
+                    org.junit.jupiter.api.Assertions.assertEquals("5", saved.getReceiverKey());
+                })
                 .verifyComplete();
     }
 }

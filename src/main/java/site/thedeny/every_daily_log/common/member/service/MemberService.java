@@ -17,10 +17,9 @@ public class MemberService {
 
     /* 회원 가입 */
     public Mono<MemberEntity> join(MemberRequest request) {
-        System.out.println("request.getPassword() = " + request.getPassword());
+        // 비밀번호 원문은 로그에 남기지 않는다.
         request.setPassword(passwordEncoder.encode(request.getPassword()));
         MemberEntity entity = request.convertToEntity();
-        System.out.println("entity = " + entity);
         return memberRepository.existsByUserId(entity.getUserId())
                 .flatMap(exists -> {
                     if (exists) return Mono.error(new RuntimeException("이미 존재하는 아이디입니다."));

@@ -1,0 +1,8 @@
+.gradle/
+.idea/
+build/
+out/
+*.iml
+
+# 로컬 개발 도구/JDK 다운로드는 저장소에 포함하지 않는다.
+.jdk/
