@@ -1,6 +1,5 @@
 package site.thedeny.every_daily_log;
 
-import org.h2.util.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -9,7 +8,7 @@ class EveryDailyLogApplicationTests {
 
 	@Test
 	void contextLoads() {
-		System.out.println(StringUtils.isNumber(null));
+		// Spring ApplicationContext가 예외 없이 생성되면 성공한다.
 	}
 
 }
